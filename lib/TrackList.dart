@@ -3,9 +3,9 @@ import 'package:music_player/track.dart';
 
 class TrackList extends StatelessWidget {
   final List<Map<String, dynamic>> tracks;
-
-  const TrackList({super.key, required this.tracks});
-
+  final Function(int)? onTrackSelected;
+  const TrackList({super.key, required this.tracks, this.onTrackSelected});
+    
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
@@ -25,6 +25,9 @@ class TrackList extends StatelessWidget {
             style: TextStyle(color: Colors.white.withOpacity(0.7)),
           ),
           onTap: () {
+            onTrackSelected?.call(track['id']);
+          },
+          onLongPress: () {
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -32,8 +35,8 @@ class TrackList extends StatelessWidget {
               ),
             );
           },
+          );
+          },
         );
-      },
-    );
+      }
   }
-}

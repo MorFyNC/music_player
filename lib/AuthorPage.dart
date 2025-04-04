@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:music_player/track.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'TrackList.dart';
 
@@ -100,7 +101,12 @@ class _AuthorPageState extends State<AuthorPage> {
                   ),
                   const SizedBox(height: 24), // Отступ между текстом и списком треков
                   Expanded(
-                    child: TrackList(tracks: tracks),
+                    child: TrackList(tracks: tracks, onTrackSelected: (trackId) {Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => TrackPage(trackId: trackId),
+              ),
+            );},),
                   ),
                 ],
               ),
