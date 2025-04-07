@@ -1,60 +1,154 @@
 import 'package:flutter/material.dart';
+import 'package:music_player/MyMusicPage.dart';
+import 'package:music_player/MyPlaylistsPage.dart';
+import 'package:music_player/ProfilePage.dart';
+import 'package:music_player/SearchPage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class DrawerPage extends StatefulWidget {
-  final String userId;
-  const DrawerPage({super.key, required this.userId} );
+class AppDrawer extends StatefulWidget {
+  const AppDrawer({super.key});
 
   @override
-  State<DrawerPage> createState() => _DrawerPageState();
+  State<AppDrawer> createState() => _AppDrawerState();
 }
 
-class _DrawerPageState extends State<DrawerPage> {
-
-  final supabase = Supabase.instance.client;
-  dynamic user;
-
-  Future<void> getUsersData() async {
-    final response = await supabase
-      .from('User')
-      .select()
-      .eq('id', widget.userId)
-      .single();
-
-    setState(() {
-      user = response;
-    });
-  }
+class _AppDrawerState extends State<AppDrawer> {
+  String _login = 'Загрузка...';
+  String? _avatarUrl;
+  bool _isLoading = true;
 
   @override
   void initState() {
-    getUsersData();
     super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getInt('userId');
+
+      if (userId != null) {
+        final response = await Supabase.instance.client
+            .from('User')
+            .select('login, avatar_url')
+            .eq('id', userId)
+            .single();
+
+        if (mounted) {
+          setState(() {
+            _login = response['login'] ?? 'Пользователь';
+            _avatarUrl = response['avatar_url'];
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _login = 'Ошибка загрузки';
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      children: [
-        DrawerHeader(
-          child: UserAccountsDrawerHeader(accountName: Text(user['login']),
-           accountEmail: Text(user['email']), 
-           currentAccountPicture: Image.network(user['Image']),
-           otherAccountsPictures: [
-              IconButton(onPressed: () {}, icon: Icon(Icons.logout))
-            ],
+    return Drawer(
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.blue, Colors.blueGrey],
           ),
         ),
-        ListTile(
-          title: Text('Моя музыка'),
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            _buildHeader(),
+            _buildDrawerItem(
+              context,
+              icon: Icons.person,
+              title: 'Профиль',
+              route: const ProfilePage(),
+            ),
+            _buildDrawerItem(
+              context,
+              icon: Icons.music_note,
+              title: 'Моя музыка',
+              route: const FavoritesPage(),
+            ),
+            _buildDrawerItem(
+              context,
+              icon: Icons.search,
+              title: 'Поиск',
+              route: const SearchPage(),
+            ),
+            _buildDrawerItem(
+              context,
+              icon: Icons.playlist_play,
+              title: 'Мои плейлисты',
+              route: const MyPlaylistsPage(),
+            ),
+          ],
         ),
-        ListTile(
-          title: Text(''),
-        ),
-        ListTile(
-          title: Text(''),
-        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return DrawerHeader(
+      decoration: const BoxDecoration(
+        color: Colors.transparent,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _isLoading
+              ? const CircularProgressIndicator(color: Colors.white)
+              : CircleAvatar(
+                  radius: 30,
+                  backgroundImage: _avatarUrl != null
+                      ? NetworkImage(_avatarUrl!)
+                      : const AssetImage('images/default_avatar.png')
+                          as ImageProvider,
+                ),
+          const SizedBox(height: 10),
+          Text(
+            _login,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDrawerItem(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required Widget route,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: Colors.white),
+      title: Text(
+        title,
+        style: const TextStyle(color: Colors.white),
+      ),
+      onTap: () {
+        Navigator.pop(context);
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => route),
+        );
+      },
     );
   }
 }

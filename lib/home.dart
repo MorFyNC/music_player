@@ -4,7 +4,8 @@ import 'package:music_player/HorizontalButtonList.dart';
 import 'package:music_player/PlaylistPage.dart';
 import 'package:music_player/SectionHeader.dart';
 import 'package:music_player/TrackList.dart';
-import 'package:music_player/bottom.dart';
+import 'package:music_player/playerProvider';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'ProfilePage.dart';
@@ -18,13 +19,10 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final supabase = Supabase.instance.client;
-  int _currentTrackId = 1;
   List<Map<String, dynamic>> _tracks = [];
   List<Map<String, dynamic>> _playlists = [];
   List<Map<String, dynamic>> _artists = [];
-  final GlobalKey<BottomPlayerState> _bottomPlayerKey = GlobalKey();
   bool _isLoading = false;
-  bool _isTrackLoading = false; // Новое состояние для загрузки трека
 
   @override
   void initState() {
@@ -35,9 +33,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _loadInitialData() async {
     if (_isLoading) return;
     
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
       final [tracks, playlists, artists] = await Future.wait([
@@ -51,21 +47,20 @@ class _HomePageState extends State<HomePage> {
         _playlists = playlists;
         _artists = artists;
       });
+
+      if (tracks.isNotEmpty) {
+        final player = Provider.of<PlayerProvider>(context, listen: false);
+        player.setTrackList(tracks);
+      }
     } catch (e) {
       print('Error loading data: $e');
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   Future<List<Map<String, dynamic>>> _fetchTracks() async {
-    final response = await supabase
-        .from('Track')
-        .select('*, Author (Name)');
+    final response = await supabase.from('Track').select('*, Author (Name)');
     return List<Map<String, dynamic>>.from(response);
   }
 
@@ -86,43 +81,6 @@ class _HomePageState extends State<HomePage> {
     return List<Map<String, dynamic>>.from(response);
   }
 
-  Future<void> _playNextTrack() async {
-    if (_tracks.isEmpty) return;
-    final currentIndex = _tracks.indexWhere((t) => t['id'] == _currentTrackId);
-    final newTrackId = (currentIndex == -1 || currentIndex == _tracks.length - 1)
-        ? _tracks.first['id']
-        : _tracks[currentIndex + 1]['id'];
-    await _updateTrack(newTrackId);
-  }
-
-  Future<void> _playPreviousTrack() async {
-    if (_tracks.isEmpty) return;
-    final currentIndex = _tracks.indexWhere((t) => t['id'] == _currentTrackId);
-    final newTrackId = (currentIndex == -1 || currentIndex == 0)
-        ? _tracks.last['id']
-        : _tracks[currentIndex - 1]['id'];
-    await _updateTrack(newTrackId);
-  }
-
-  Future<void> _updateTrack(int trackId) async {
-    if (_currentTrackId == trackId) return;
-    
-    setState(() {
-      _isTrackLoading = true; // Показываем загрузку
-      _currentTrackId = trackId;
-    });
-
-    try {
-      await _bottomPlayerKey.currentState?.updateTrack(trackId);
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isTrackLoading = false; // Скрываем загрузку
-        });
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -136,6 +94,9 @@ class _HomePageState extends State<HomePage> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
+          leading: IconButton(
+        icon: const Icon(Icons.menu),
+        onPressed: () => Scaffold.of(context).openDrawer(),),
           title: const Text('Music App', style: TextStyle(color: Colors.white)),
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -144,28 +105,10 @@ class _HomePageState extends State<HomePage> {
               icon: const Icon(Icons.person, color: Colors.white),
               onPressed: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => ProfilePage()),
+                MaterialPageRoute(builder: (_) => const ProfilePage()),
               ),
             )
           ],
-        ),
-        bottomNavigationBar: SizedBox(
-          height: 180,
-          child: Stack(
-  children: [
-    BottomPlayer(key: _bottomPlayerKey,
-                initialTrackId: _currentTrackId,
-                onNext: _playNextTrack,
-                onPrevious: _playPreviousTrack,),
-    if (_isTrackLoading)
-      Container(
-        color: Colors.black54,
-        child: const Center(
-          child: CircularProgressIndicator(),
-        ),
-      ),
-  ],
-)
         ),
         body: _isLoading && _tracks.isEmpty
             ? const Center(child: CircularProgressIndicator())
@@ -174,7 +117,7 @@ class _HomePageState extends State<HomePage> {
                 child: ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
-                    SectionHeader(title: 'Ваши плейлисты'),
+                    const SectionHeader(title: 'Ваши плейлисты'),
                     HorizontalButtonList(
                       itemsFuture: Future.value(_playlists),
                       onPressed: (item) => Navigator.push(
@@ -184,7 +127,7 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                     ),
-                    SectionHeader(title: 'Популярные исполнители'),
+                    const SectionHeader(title: 'Популярные исполнители'),
                     HorizontalButtonList(
                       itemsFuture: Future.value(_artists),
                       onPressed: (item) => Navigator.push(
@@ -194,13 +137,10 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                     ),
-                    SectionHeader(title: 'Треки'),
+                    const SectionHeader(title: 'Треки'),
                     _tracks.isEmpty
                         ? const Center(child: Text('Нет треков'))
-                        : TrackList(
-                            tracks: _tracks,
-                            onTrackSelected: _updateTrack,
-                          ),
+                        : TrackList(tracks: _tracks),
                   ],
                 ),
               ),

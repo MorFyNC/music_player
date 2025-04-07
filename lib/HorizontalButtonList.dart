@@ -46,7 +46,7 @@ class HorizontalButtonList extends StatelessWidget {
                               : null,
                         ),
                         SizedBox(height: 8),
-                        Container(
+                        SizedBox(
                           width: 80,
                           child: Text(
                             item['Name'],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:music_player/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:io';
@@ -95,7 +96,8 @@ class _ProfilePageState extends State<ProfilePage> {
       await prefs.remove('userId');
 
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/');
+        Navigator.popUntil(context, ModalRoute.withName('/'));
+        Navigator.pushNamed(context, '/');
       }
     } catch (e) {
       print('Ошибка при выходе: $e');
@@ -104,7 +106,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return MainLayout(child: Container(
       height: double.infinity,
       width: double.infinity,
       decoration: BoxDecoration(
@@ -162,6 +164,6 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
       ),
     )
-    );
+    ));
   }
 }
