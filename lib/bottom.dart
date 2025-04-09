@@ -128,7 +128,8 @@ class BottomPlayer extends StatelessWidget {
                       await player.seek(Duration(seconds: value.toInt()));
                     },
                     activeColor: Theme.of(context).primaryColor,
-                    inactiveColor: Colors.grey.shade600,
+                    inactiveColor: Colors.white,
+                    thumbColor: Colors.blue,
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),

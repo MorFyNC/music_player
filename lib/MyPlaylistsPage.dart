@@ -249,7 +249,7 @@ class _MyPlaylistsPageState extends State<MyPlaylistsPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Удалить плейлист?'),
-        content: const Text('Это действие нельзя отменить'),
+        content: const Text('Это действие нельзя отменить', style: TextStyle(color: Colors.black)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),

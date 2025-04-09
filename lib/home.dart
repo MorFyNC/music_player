@@ -96,6 +96,7 @@ class _HomePageState extends State<HomePage> {
         appBar: AppBar(
           leading: IconButton(
         icon: const Icon(Icons.menu),
+        color: Colors.white,
         onPressed: () => Scaffold.of(context).openDrawer(),),
           title: const Text('Music App', style: TextStyle(color: Colors.white)),
           backgroundColor: Colors.transparent,
